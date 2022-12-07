@@ -1,7 +1,7 @@
+mod network;
 mod util;
 
-use util::*;
-use log::info;
+use network::Network;
 use log4rs;
 use mnist::*;
 use ndarray::prelude::*;
@@ -34,8 +34,6 @@ fn main() {
 	let _test_labels = Array2::from_shape_vec((10_000, 1), tst_lbl)
 		.expect("Error converting testing labels to Array2 struct")
 		.map(|x| *x as f32);
-	
-	save_image(1, &training_images);
 
-	info!("Loaded training set of {} images and {} labels", training_images.len_of(Axis(0)), training_labels.len());
+	let mut _network = Network::new(training_images, training_labels);
 }
