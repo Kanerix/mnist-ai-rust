@@ -1,4 +1,6 @@
 mod network;
+mod layers;
+mod neuron;
 mod util;
 
 use network::Network;
@@ -21,19 +23,27 @@ fn main() {
 		.test_set_length(10_000)
 		.finalize();
 
-	let training_images = Array3::from_shape_vec((60_000, 28, 28), trn_img)
+	let trn_imgs = Array3::from_shape_vec((60_000, 28, 28), trn_img)
 		.expect("Error converting images to Array3 struct")
 		.map(|x| *x as f32 / 256.0);
-	let training_labels = Array2::from_shape_vec((60_000, 1), trn_lbl)
+	let trn_lbls = Array2::from_shape_vec((60_000, 1), trn_lbl)
 		.expect("Error converting training labels to Array2 struct")
-		.map(|x| *x as f32);
+		.map(|x| *x as u8);
 	
-	let _test_images = Array3::from_shape_vec((10_000, 28, 28), tst_img)
+	let test_imgs = Array3::from_shape_vec((10_000, 28, 28), tst_img)
 		.expect("Error converting images to Array3 struct")
 		.map(|x| *x as f32 / 256.);
-	let _test_labels = Array2::from_shape_vec((10_000, 1), tst_lbl)
+	let test_lbls = Array2::from_shape_vec((10_000, 1), tst_lbl)
 		.expect("Error converting testing labels to Array2 struct")
-		.map(|x| *x as f32);
+		.map(|x| *x as u8);
 
-	let mut _network = Network::new(training_images, training_labels);
+	let mut network = Network::new(
+		trn_imgs,
+		trn_lbls,
+		test_imgs,
+		test_lbls,
+		(784, 16, 16, 10)
+	);
+
+	network.train_network();
 }

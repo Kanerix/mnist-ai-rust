@@ -1,8 +1,9 @@
 use image::{self, ImageBuffer, Luma};
 use ndarray::Array3;
 
-pub fn get_label_description(label: u8) -> impl Into<String> {
-	match label {
+#[allow(dead_code)]
+pub fn get_label_desc(label: impl Into<u8>) -> String {
+	let desc = match label.into() {
 		0 => "T-shirt/top",
 		1 => "Trouser",
 		2 => "Pullover",
@@ -14,9 +15,12 @@ pub fn get_label_description(label: u8) -> impl Into<String> {
 		8 => "Bag",
 		9 => "Ankle boot",
 		_ => "Unknown",
-	}
+	};
+
+	desc.to_string()
 }
 
+#[allow(dead_code)]
 pub fn save_image(image_num: usize, image_data: &Array3<f32>) {
 	ImageBuffer::from_fn(28, 28, |x, y| {
 		Luma([
