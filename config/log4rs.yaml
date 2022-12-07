@@ -8,15 +8,14 @@ appenders:
     policy:
       trigger:
         kind: size
-        limit: 50 mb
+        limit: 500 mb
       roller:
         kind: fixed_window
         pattern: logs/archive/std_{}.log
-        count: 5
+        count: 10
         base: 1
 
 root:
-  level: TRACE
+  level: trace
   appenders:
-    - stdout
     - training
