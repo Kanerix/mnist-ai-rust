@@ -1,5 +1,3 @@
-use log::info;
-
 use crate::neuron::Neuron;
 
 pub trait Layer {
@@ -23,11 +21,11 @@ pub struct ActivationLayer {
 }
 
 impl ActivationLayer {
-    pub fn new(neurons_len: usize) -> ActivationLayer {
-		let mut neurons_buf = Vec::with_capacity(neurons_len);
+    pub fn new(neurons_amount: usize, weights_amount: usize) -> ActivationLayer {
+		let mut neurons_buf = Vec::with_capacity(neurons_amount);
 
-		for i in 0..neurons_buf.len() {
-			neurons_buf[i] = Neuron::new(neurons_len);
+		for _ in 0..neurons_amount {
+			neurons_buf.push(Neuron::new(weights_amount));
 		}
 
         ActivationLayer {
@@ -41,11 +39,11 @@ pub struct OutputLayer {
 }
 
 impl OutputLayer {
-    pub fn new(neurons_len: usize) -> OutputLayer {
-		let mut neurons_buf = Vec::with_capacity(neurons_len);
+    pub fn new(neurons_amount: usize, weights_amount: usize) -> OutputLayer {
+		let mut neurons_buf = Vec::with_capacity(neurons_amount);
 
-		for i in 0..neurons_buf.len() {
-			neurons_buf[i] = Neuron::new(neurons_len);
+		for _ in 0..neurons_amount {
+			neurons_buf.push(Neuron::new(weights_amount));
 		}
 
         OutputLayer {
