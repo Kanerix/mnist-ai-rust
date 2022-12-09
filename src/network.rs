@@ -40,12 +40,14 @@ impl Network {
     }
 
     pub fn train_network(mut self) {
-        for ((idx, img), label) in self
+        for ((idx, img), img_label) in self
             .trn_imgs
             .outer_iter()
             .enumerate()
             .zip(self.trn_lbls.outer_iter())
         {
+			info!("Training on image {} - label {}({})", idx, get_label_desc(img_label[0]), img_label[0]);
+
             let img_raw = Array1::from_shape_fn(img.len(), |x| {
                 let imf_buf = img.into_shape((1, 784)).unwrap();
                 imf_buf.get((0, x)).unwrap().to_owned()
@@ -102,30 +104,33 @@ impl Network {
                     neuron.activation = sigmoid(sum - neuron.bias);
                 }
 
-                let mut guess: (u8, f32) = (0, 0.);
-
-                for (idx, neuron) in self.output_layer.neurons.iter().enumerate() {
-                    if neuron.activation > guess.1 {
-                        guess = (idx as u8, neuron.activation);
-                    }
-                }
-
-                info!(
-                    "FF for image {}. Guess: {}({}) – Correct: {}",
-					idx,
-                    get_label_desc(guess.0 as u8),
-                    guess.1,
-                    get_label_desc(label[0])
-                );
+				info!("FF activations: {:?}", self.output_layer.neurons.iter().map(|x| x.activation).collect::<Vec<f32>>());
 
                 break 'feed_forward;
             };
+
+
+			let mut cost = Vec::with_capacity(self.output_layer.neurons.len());
+
+			'calculate_cost: {
+				for (idx, neuron) in self.output_layer.neurons.iter().enumerate() {
+					if idx as u8 == img_label[0] {
+						cost.push(f32::powf(2., neuron.activation - 1.));
+					} else {
+						cost.push(f32::powf(2., neuron.activation - 0.));
+					} 
+				}	
+
+				info!("Cost calculated: {:?}", cost);
+
+				break 'calculate_cost;
+			}
 
             'back_propagate: {
                 break 'back_propagate;
             };
 			
-			if idx == 10 {
+			if idx == 3 {
 				break
 			}
         }

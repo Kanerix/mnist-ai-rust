@@ -3,7 +3,7 @@ use std::path::Path;
 use anyhow::Result;
 use image::{self, io::Reader as ImageReader, ImageBuffer, Luma};
 
-const DEFAULT_BIAS: f32 = 1.;
+const DEFAULT_BIAS: f32 = 0.8;
 
 #[derive(Clone, Debug)]
 pub struct Neuron {
