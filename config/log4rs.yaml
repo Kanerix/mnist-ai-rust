@@ -6,7 +6,7 @@ appenders:
     path: logs/std.log
     append: false
     encoder:
-      pattern: "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | {f}:{L} — {m}{n}"
+      pattern: "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5}| {f}:{L} — {m}{n}"
     policy:
       trigger:
         kind: size
