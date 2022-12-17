@@ -11,3 +11,4 @@ log4rs = { version = "1.2.0", features = ["rolling_file_appender", "console_appe
 mnist = "0.5.0"
 ndarray = "0.15.6"
 rand = "0.8.5"
+serde = "1.0.150"

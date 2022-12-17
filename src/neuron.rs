@@ -2,10 +2,9 @@ use std::path::Path;
 
 use anyhow::Result;
 use image::{self, io::Reader as ImageReader, ImageBuffer, Luma};
+use serde::{Serialize, Deserialize};
 
-const DEFAULT_BIAS: f32 = 0.8;
-
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Neuron {
     pub activation: f32,
     pub weights: Vec<f32>,
@@ -17,13 +16,13 @@ impl Neuron {
         let mut weights_buf = Vec::with_capacity(weights_amount);
 
         for _ in 0..weights_amount {
-            weights_buf.push(rand::random::<f32>());
+            weights_buf.push(rand::random());
         }
 
         Neuron {
             activation: 0.,
             weights: weights_buf,
-            bias: DEFAULT_BIAS,
+            bias: rand::random(),
         }
     }
 
@@ -36,15 +35,15 @@ impl Neuron {
             .collect::<Vec<f32>>();
 
         Ok(Neuron {
-            activation: 0.0,
+            activation: 0.,
             weights,
-            bias: DEFAULT_BIAS,
+            bias: rand::random(),
         })
     }
 
     pub fn save_as_image(&self, img_path: &Path, size: (u32, u32)) -> Result<()> {
         ImageBuffer::from_fn(size.0, size.1, |x, y| {
-			Luma([(self.weights[(y * size.0 + x) as usize] * 255.) as u8])
+            Luma([(self.weights[(y * size.0 + x) as usize] * 255.) as u8])
         })
         .save(img_path)?;
 
