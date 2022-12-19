@@ -61,7 +61,6 @@ impl Network {
             self.input_layer.input_neurons = img_raw.to_vec();
 
             'feed_forward: {
-                // From input layer to first hidden layer
                 for neuron in self.activation_layers.0.neurons.iter_mut() {
                     let mut sum: f32 = 0.;
 
@@ -76,7 +75,6 @@ impl Network {
                     neuron.activation = sigmoid(sum + (neuron.bias));
                 }
 
-                // From first hidden layer to second hidden layer
                 for neuron in self.activation_layers.1.neurons.iter_mut() {
                     let mut sum: f32 = 0.;
 
@@ -93,7 +91,6 @@ impl Network {
                     neuron.activation = sigmoid(sum + (neuron.bias));
                 }
 
-                // From second hidden layer to output layer
                 for neuron in self.output_layer.neurons.iter_mut() {
                     let mut sum: f32 = 0.;
 
@@ -122,16 +119,18 @@ impl Network {
                 break 'feed_forward;
             };
 
-            let mut cost = Vec::with_capacity(self.output_layer.neurons.len());
+            let mut cost = 0.;
 
             'calculate_cost: {
                 for (idx, neuron) in self.output_layer.neurons.iter().enumerate() {
                     if idx as u8 == img_label[0] {
-                        cost.push(f32::powf(2., neuron.activation - 1.));
+                        cost += f32::powf(2., neuron.activation - 1.);
                     } else {
-                        cost.push(f32::powf(2., neuron.activation - 0.));
+                        cost += f32::powf(2., neuron.activation - 0.);
                     }
                 }
+
+				info!("Cost: {:?}", cost);
 
                 break 'calculate_cost;
             }
@@ -141,10 +140,12 @@ impl Network {
             'back_propagate: {
 				// Calculate output layer deltas
 				
+				break 'back_propagate;
             };
         }
 
-		let total_cost_avg = total_cost.iter().fold(0., |acc, x| acc + x.iter().sum::<f32>()) / total_cost.len() as f32;
+		let total_cost_avg = total_cost.iter().sum::<f32>() / total_cost.len() as f32;
+
         info!("Training complete: Cost avg {:?}", total_cost_avg);
     }
 
