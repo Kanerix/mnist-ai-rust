@@ -5,7 +5,6 @@ mod util;
 
 use std::io::Write;
 
-use log::{info, warn};
 use log4rs;
 use mnist::*;
 use ndarray::prelude::*;
@@ -40,18 +39,13 @@ fn main() {
         .expect("Error converting testing labels to Array2 struct")
         .map(|x| *x as u8);
 
-    let mut network = Network::new(
+    let network = Network::new(
         training_imgs,
         training_labels,
         test_imgs,
         test_labels,
         (784, 16, 16, 10),
     );
-
-    match network.load_network_from_images() {
-        Ok(_) => info!("Loaded network from images"),
-        Err(_) => warn!("Did not find a local network"),
-    };
 
 	std::io::stdout().write(b"train/test?\n").unwrap();
 	std::io::stdout().flush().unwrap();

@@ -25,28 +25,4 @@ impl Neuron {
             bias: rand::random(),
         }
     }
-
-    pub fn from_image(img_path: &Path) -> Result<Neuron> {
-        let weights = ImageReader::open(img_path)?
-            .decode()?
-            .to_luma8()
-            .pixels()
-            .map(|p| p[0] as f32 / 256.0)
-            .collect::<Vec<f32>>();
-
-        Ok(Neuron {
-            activation: 0.,
-            weights,
-            bias: rand::random(),
-        })
-    }
-
-    pub fn save_as_image(&self, img_path: &Path, size: (u32, u32)) -> Result<()> {
-        ImageBuffer::from_fn(size.0, size.1, |x, y| {
-            Luma([(self.weights[(y * size.0 + x) as usize] * 255.) as u8])
-        })
-        .save(img_path)?;
-
-        Ok(())
-    }
 }

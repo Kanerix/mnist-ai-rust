@@ -1,12 +1,8 @@
-use std::path::Path;
-
-use anyhow::Result;
 use log::info;
 use ndarray::{Array1, Array2, Array3};
 
 use crate::{
     layers::{ActivationLayer, InputLayer, OutputLayer},
-    neuron::Neuron,
     util::{activation_functions::sigmoid, get_label_desc},
 };
 
@@ -155,7 +151,7 @@ impl Network {
     }
 
     pub fn test_network(&self) {
-        for (idx, (img, img_label)) in self
+        for (idx, (_img, img_label)) in self
             .test_imgs
             .outer_iter()
             .zip(self.test_labels.outer_iter())
@@ -168,54 +164,5 @@ impl Network {
                 img_label[0]
             );
         }
-    }
-
-    #[allow(dead_code)]
-    pub fn save_network_as_images(&self) -> Result<()> {
-        for (idx, neuron) in self.activation_layers.0.neurons.iter().enumerate() {
-            neuron.save_as_image(
-                Path::new(&format!("neurons/activation_layer_1_neuron_{idx}.png")),
-                (28, 28),
-            )?;
-        }
-
-        for (idx, neuron) in self.activation_layers.1.neurons.iter().enumerate() {
-            neuron.save_as_image(
-                Path::new(&format!("neurons/activation_layer_2_neuron_{idx}.png")),
-                (4, 4),
-            )?;
-        }
-
-        for (idx, neuron) in self.output_layer.neurons.iter().enumerate() {
-            neuron.save_as_image(
-                Path::new(&format!("neurons/output_layer_neuron_{idx}.png")),
-                (4, 4),
-            )?;
-        }
-
-        info!("Saved network as images");
-
-        Ok(())
-    }
-
-    pub fn load_network_from_images(&mut self) -> Result<()> {
-        for (idx, neuron) in self.activation_layers.0.neurons.iter_mut().enumerate() {
-            *neuron = Neuron::from_image(Path::new(&format!(
-                "neurons/activation_layer_1_neuron_{idx}.png"
-            )))?;
-        }
-
-        for (idx, neuron) in self.activation_layers.1.neurons.iter_mut().enumerate() {
-            *neuron = Neuron::from_image(Path::new(&format!(
-                "neurons/activation_layer_2_neuron_{idx}.png"
-            )))?;
-        }
-
-        for (idx, neuron) in self.output_layer.neurons.iter_mut().enumerate() {
-            *neuron =
-                Neuron::from_image(Path::new(&format!("neurons/output_layer_neuron_{idx}.png")))?;
-        }
-
-        Ok(())
     }
 }
