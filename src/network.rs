@@ -39,6 +39,8 @@ impl Network {
     }
 
     pub fn train_network(mut self) {
+		let mut total_cost = Vec::with_capacity(60_000);
+
         for (idx, (img, img_label)) in self
             .training_imgs
             .outer_iter()
@@ -59,7 +61,7 @@ impl Network {
             self.input_layer.input_neurons = img_raw.to_vec();
 
             'feed_forward: {
-                // From input to first hidden layer
+                // From input layer to first hidden layer
                 for neuron in self.activation_layers.0.neurons.iter_mut() {
                     let mut sum: f32 = 0.;
 
@@ -71,10 +73,9 @@ impl Network {
                         sum += weight * activation;
                     }
 
-					info!("FF sum: {}", sigmoid(sum + (neuron.bias)));
                     neuron.activation = sigmoid(sum + (neuron.bias));
                 }
-				info!("FF activations: {:?}", self.activation_layers.0.neurons.iter().map(|x| x.activation).collect::<Vec<f32>>());
+
                 // From first hidden layer to second hidden layer
                 for neuron in self.activation_layers.1.neurons.iter_mut() {
                     let mut sum: f32 = 0.;
@@ -110,7 +111,7 @@ impl Network {
                 }
 
                 info!(
-                    "FF activations: {:?}",
+                    "Output activations: {:?}",
                     self.output_layer
                         .neurons
                         .iter()
@@ -132,22 +133,19 @@ impl Network {
                     }
                 }
 
-                info!("Cost calculated: {:?}", cost);
-
                 break 'calculate_cost;
             }
 
-            'back_propagate: {
-                break 'back_propagate;
-            };
+			total_cost.push(cost);
 
-            if idx == 60_000 {
-                break;
-            }
+            'back_propagate: {
+				// Calculate output layer deltas
+				
+            };
         }
 
-        // self.save_network_as_images().unwrap();
-        info!("Training complete");
+		let total_cost_avg = total_cost.iter().fold(0., |acc, x| acc + x.iter().sum::<f32>()) / total_cost.len() as f32;
+        info!("Training complete: Cost avg {:?}", total_cost_avg);
     }
 
     pub fn test_network(&self) {

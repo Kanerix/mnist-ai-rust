@@ -2,9 +2,8 @@ use std::path::Path;
 
 use anyhow::Result;
 use image::{self, io::Reader as ImageReader, ImageBuffer, Luma};
-use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Neuron {
     pub activation: f32,
     pub weights: Vec<f32>,
