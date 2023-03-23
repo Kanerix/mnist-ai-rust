@@ -1,4 +1,6 @@
-#[derive(Clone, Debug)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Neuron {
     pub activation: f32,
     pub weights: Vec<f32>,
@@ -10,7 +12,7 @@ impl Neuron {
         let mut weights_buf = Vec::with_capacity(weights_amount);
 
         for _ in 0..weights_amount {
-			weights_buf.push(rand::random::<f32>() * 2. - 1.);
+            weights_buf.push(rand::random::<f32>() * 2. - 1.);
         }
 
         Neuron {
