@@ -1,10 +1,10 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::neuron::Neuron;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct InputLayer {
-    pub input_neurons: Vec<f32>,
+    pub activations: Vec<f32>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -18,9 +18,9 @@ pub struct OutputLayer {
 }
 
 impl InputLayer {
-    pub fn new(neurons_len: usize) -> InputLayer {
+    pub fn new(neurons_amount: usize) -> InputLayer {
         InputLayer {
-            input_neurons: Vec::with_capacity(neurons_len),
+            activations: Vec::with_capacity(neurons_amount),
         }
     }
 }

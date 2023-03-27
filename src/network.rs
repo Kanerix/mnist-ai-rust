@@ -1,18 +1,14 @@
 use log::info;
 use ndarray::{Array1, Array2, Array3};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     layers::{ActivationLayer, InputLayer, OutputLayer},
-    util::{
-        activation_functions::{sigmoid, sigmoid_deriv},
-        get_label_desc,
-    },
+    util::activation_functions::{sigmoid, sigmoid_deriv},
 };
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct Network {
-    pub training_imgs: Array3<f32>,
+    pub training_images: Array3<f32>,
     pub training_labels: Array2<u8>,
     pub test_imgs: Array3<f32>,
     pub test_labels: Array2<u8>,
@@ -30,7 +26,7 @@ impl Network {
         shape: (usize, usize, usize, usize),
     ) -> Network {
         Network {
-            training_imgs,
+            training_images: training_imgs,
             training_labels,
             test_imgs,
             test_labels,
@@ -44,172 +40,152 @@ impl Network {
     }
 
     pub fn train_network(&mut self) {
-        let mut iterations = 0;
-        let mut accuracy = 0.;
+        // How many times have we gone through the entire dataset.
+        let mut dataset_iteration = 0;
 
-        let mut total_cost = Vec::with_capacity(60_000);
-        let mut total_correct = 0;
+        while dataset_iteration < 10 {
+            let outer_images = self.training_images.outer_iter();
+            let outer_labels = self.training_labels.outer_iter();
 
-        for (idx, (img, img_label)) in self
-            .training_imgs
-            .outer_iter()
-            .zip(self.training_labels.outer_iter())
-            .enumerate()
-        {
-            /* info!(
-                "Training on image {} - label {}({})",
-                idx,
-                get_label_desc(img_label[0]),
-                img_label[0]
-            ); */
+            // Loop that runs over all training images.
+            for (idx, (image, image_label)) in outer_images.zip(outer_labels).enumerate() {
+                // Make the image into a 1D array for the input layer.
+                let raw_image = Array1::from_shape_fn(image.len(), |x| {
+                    let imf_buf = image.into_shape((1, 784)).unwrap();
+                    imf_buf.get((0, x)).unwrap().to_owned()
+                }).to_vec();
 
-            let img_raw = Array1::from_shape_fn(img.len(), |x| {
-                let imf_buf = img.into_shape((1, 784)).unwrap();
-                imf_buf.get((0, x)).unwrap().to_owned()
-            });
-            self.input_layer.input_neurons = img_raw.to_vec();
+				// Feed the current image forward through the network.
+                self.feed_forward(raw_image); // Box pointer yes
+                let cost = self.calculate_iteration_cost(image_label[0]);
 
-            let mut cost = 0.;
+                'back_propagate: {
+                    let mut output_layer_changes =
+                        Array2::from_shape_vec((17, 10), vec![0.; 170]).unwrap();
 
-            'calculate_cost: {
-                let mut highest_activation = (0, 0.);
+                    for (j, neuron) in self.output_layer.neurons.iter().enumerate() {
+                        for (k, (weight, connected_neuron)) in neuron
+                            .weights
+                            .iter()
+                            .zip(self.activation_layers.1.neurons.iter())
+                            .enumerate()
+                        {
+                            let mut desire = 0.;
 
-                for (idx, neuron) in self.output_layer.neurons.iter().enumerate() {
-                    if neuron.activation > highest_activation.1 {
-                        highest_activation = (idx, neuron.activation);
+                            if j == image_label[0] as usize {
+                                desire = 1.;
+                            }
+
+                            output_layer_changes[[j, k]] = connected_neuron.activation
+                                * sigmoid_deriv(neuron.activation)
+                                * (2. * (neuron.activation - desire));
+                        }
                     }
 
-                    if idx as u8 == img_label[0] {
-                        cost += f32::powf(2., neuron.activation - 1.);
-                    } else {
-                        cost += f32::powf(2., neuron.activation - 0.);
-                    }
-                }
-
-                if highest_activation.1 == img_label[0] as f32 {
-                    total_correct += 1;
-                }
-
-                break 'calculate_cost;
+                    break 'back_propagate;
+                };
             }
 
-            total_cost.push(cost);
+            dataset_iteration += 1;
 
-            'back_propagate: {
-                let mut output_layer_changes =
-                    Array2::from_shape_vec((17, 10), vec![0.; 170]).unwrap();
+            info!(
+                "Dataset iteration {} complete – Accuracy: {}({})",
+                dataset_iteration, 0., 0.
+            );
+        }
+    }
 
-                for (j, neuron) in self.output_layer.neurons.iter().enumerate() {
-                    for (k, (weight, connected_neuron)) in neuron
-                        .weights
-                        .iter()
-                        .zip(self.activation_layers.1.neurons.iter())
-                        .enumerate()
-                    {
-                        let mut desire = 0.;
+    /// Feed an image through the network, and update all the neuron activations.
+    pub fn feed_forward(&mut self, raw_image: Vec<f32>) {
+        self.input_layer.activations = raw_image;
 
-                        if j == img_label[0] as usize {
-                            desire = 1.;
-                        }
+        // From input layer to the first activation layer.
+        for neuron in self.activation_layers.0.neurons.iter_mut() {
+            let mut sum: f32 = 0.;
+            let weights = neuron.weights.iter();
+            let activations = self.input_layer.activations.iter();
 
-                        output_layer_changes[[j, k]] = connected_neuron.activation
-                            * sigmoid_deriv(neuron.activation)
-                            * (2. * (neuron.activation - desire));
+            for (weight, activation) in weights.zip(activations) {
+                sum += weight * activation;
+            }
+
+            neuron.activation = sigmoid(sum + (neuron.bias));
+        }
+
+        // From activation layer 1 to activation layer 2.
+        for current_neuron in self.activation_layers.1.neurons.iter_mut() {
+            let mut sum: f32 = 0.;
+            let wieghts = current_neuron.weights.iter();
+            let previous_neurons = self.activation_layers.0.neurons.iter();
+
+            for (weight, neuron) in wieghts.zip(previous_neurons) {
+                sum += weight * neuron.activation;
+            }
+
+            current_neuron.activation = sigmoid(sum + (current_neuron.bias));
+        }
+
+        // From activation layer 2 to output layer.
+        for output_neuron in self.output_layer.neurons.iter_mut() {
+            let mut sum: f32 = 0.;
+            let weights = output_neuron.weights.iter();
+            let previous_neurons = self.activation_layers.1.neurons.iter();
+
+            for (weight, neuron) in weights.zip(previous_neurons) {
+                sum += weight * neuron.activation;
+            }
+
+            output_neuron.activation = sigmoid(sum + (output_neuron.bias));
+        }
+    }
+
+    /// Get the most active neuron in the output layer for the current dataset iteration.
+    /// Returns "None" if there is no neurons in the output layer.
+    pub fn get_most_active_neuron(&self) -> Option<(usize, f32)> {
+		// Stores the most active neuron in an option tuple.
+        let mut most_active_output_neuron: Option<(usize, f32)> = None;
+
+        // Loop through all output neurons.
+        for (index, neuron) in self.output_layer.neurons.iter().enumerate() {
+            most_active_output_neuron = match most_active_output_neuron {
+                // If there is no most active neuron, set it to the current neuron.
+                None => Some((index, neuron.activation)),
+                // If there is a most active neuron, check if the current neuron is more active.
+                Some((current_idx, current_activastion)) => {
+                    if neuron.activation > current_activastion {
+                        Some((index, neuron.activation))
+                    } else {
+                        Some((current_idx, current_activastion))
                     }
                 }
-
-                break 'back_propagate;
             };
         }
 
-        let total_cost_avg = total_cost.iter().sum::<f32>() / total_cost.len() as f32;
-        accuracy = total_correct as f32 / 60_000.;
-
-        info!(
-            "Training complete – Cost avg: {:?} – Accuracy: {}({})",
-            total_cost_avg, accuracy, total_correct
-        );
+        most_active_output_neuron
     }
 
-    /// Feed an image through the network.
-    pub fn feed_forward(&self) -> (usize, f32) {
-        for neuron in self.activation_layers.0.neurons.iter_mut() {
-            let mut sum: f32 = 0.;
-			let mut (input_layer_to_)in self.input_layer.input_neurons.iter().zip(
-			)
+	/// Calculate the cost of the current image iteration.
+    pub fn calculate_iteration_cost(&self, label: u8) -> f32 {
+		// Stores the cost of the current iteration in a float.
+        let mut cost: f32 = 0.;
 
-            for (weight, activation)  {
-				sum += weight * activation;
+        for (index, neuron) in self.output_layer.neurons.iter().enumerate() {
+			if index as u8 == label {
+				cost += f32::powf(2., neuron.activation - 1.);
+			} else {
+				cost += f32::powf(2., neuron.activation - 0.);
 			}
-
-            neuron.activation = sigmoid(sum + (neuron.bias));
         }
 
-        for neuron in self.activation_layers.1.neurons.iter_mut() {
-            let mut sum: f32 = 0.;
-
-            for (weight, activation) in neuron.weights.iter().zip(
-                self.activation_layers
-                    .0
-                    .neurons
-                    .iter()
-                    .map(|x| x.activation),
-            ) {
-                sum += weight * activation;
-            }
-
-            neuron.activation = sigmoid(sum + (neuron.bias));
-        }
-
-        for neuron in self.output_layer.neurons.iter_mut() {
-            let mut sum: f32 = 0.;
-
-            for (weight, activation) in neuron.weights.iter().zip(
-                self.activation_layers
-                    .1
-                    .neurons
-                    .iter()
-                    .map(|x| x.activation),
-            ) {
-                sum += weight * activation;
-            }
-
-            neuron.activation = sigmoid(sum + (neuron.bias));
-        }
-
-		// Neuron index, activation
-		let mut highest_activation: Option<(usize, f32)>;
-
-		for (idx, neuron) in self.output_layer.neurons.iter().enumerate() {
-			highest_activation = match highest_activation {
-				None => Some((idx, neuron.activation)),
-				Some((current_idx, current_activastion)) => {
-					if neuron.activation > current_activastion {
-						Some((idx, neuron.activation))
-					} else {
-						Some((current_idx, current_activastion))
-					}
-				}
-			};
-		}
-
-		// Unwrap is fine, only fails if there are no neurons in the output layer.
-		highest_activation.unwrap()
+		cost 
     }
 
     pub fn test_network(&self) {
-        for (idx, (_img, img_label)) in self
-            .test_imgs
-            .outer_iter()
-            .zip(self.test_labels.outer_iter())
-            .enumerate()
-        {
-            info!(
-                "Testing on image {} - label {}({})",
-                idx,
-                get_label_desc(img_label[0]),
-                img_label[0]
-            );
+        let outer_images = self.training_images.outer_iter();
+        let outer_labels = self.training_labels.outer_iter();
+
+        for (_idx, (_image, _image_label)) in outer_images.zip(outer_labels).enumerate() {
+            todo!("Test network with the test dataset.")
         }
     }
 }
