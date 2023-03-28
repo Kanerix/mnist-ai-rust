@@ -110,8 +110,11 @@ impl Network {
                 // Get the cost after an images has been fed forward.
                 cost_array.push(self.calculate_iteration_cost(image_label[0]));
 
-                // Back propagate the error.
-                self.back_propagate(image_label[0]);
+				// Don't back propagate on the first iteration.
+				if iteration != 0 {
+					// Back propagate the error.
+					self.back_propagate(image_label[0]);
+				}
             }
 
 			// Calculate the accuracy of the network.
@@ -271,6 +274,32 @@ impl Network {
             }
 
             let delta_bias = self.learning_rate * second_activation_error_signal[i];
+            activation_neuron.bias += delta_bias;
+        }
+
+        // Calculate the error signal for the first activation layer
+		let mut first_activation_error_signal = Vec::with_capacity(self.activation_layers.0.neurons.len());
+        for (i, first_activation_neuron) in self.activation_layers.0.neurons.iter().enumerate() {
+            let mut error_sum = 0.0;
+            for j in 0..self.activation_layers.1.neurons.len() {
+                error_sum += second_activation_error_signal[j] * self.activation_layers.1.neurons[j].weights[i];
+            }
+
+            first_activation_error_signal.push(
+				error_sum * first_activation_neuron.activation *
+				(1.0 - first_activation_neuron.activation)
+			);
+        }
+
+        // Update the weights and bias for the second activation layer
+        for (i, activation_neuron) in self.activation_layers.0.neurons.iter_mut().enumerate() {
+            for (j, previous_activation) in self.input_layer.activations.iter().enumerate() {
+                let delta_weight = self.learning_rate * first_activation_error_signal[i] * previous_activation;
+
+                activation_neuron.weights[j] += delta_weight;
+            }
+
+            let delta_bias = self.learning_rate * first_activation_error_signal[i];
             activation_neuron.bias += delta_bias;
         }
     }
