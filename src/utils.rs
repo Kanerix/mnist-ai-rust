@@ -1,6 +1,8 @@
 use image::{self, ImageBuffer, Luma};
 use ndarray::Array3;
 
+use crate::neuron::Neuron;
+
 #[allow(dead_code)]
 pub fn get_label_desc(label: impl Into<u8>) -> String {
     let desc = match label.into() {
@@ -28,12 +30,20 @@ pub fn save_image(image_num: usize, image_data: &Array3<f32>) {
     .unwrap();
 }
 
+pub fn save_neuron_as_image(neuron: &Neuron, name: &str) {
+	let dimension = (neuron.weights.len()/4) as u32;
+	dbg!(dimension);
+    ImageBuffer::from_fn(dimension, dimension, |x, y| {
+		let weight = neuron.weights[(x+y) as usize];
+		dbg!(weight);
+		Luma([(weight * 256.0) as u8])
+    })
+    .save(&format!("images/{name}.png"))
+    .unwrap();
+}
+
 pub mod activation_functions {
     pub fn sigmoid(x: f32) -> f32 {
         1.0 / (1.0 + (-x).exp())
-    }
-
-    pub fn sigmoid_deriv(x: f32) -> f32 {
-        sigmoid(x) * (1.0 - sigmoid(x))
     }
 }

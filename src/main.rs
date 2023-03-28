@@ -1,7 +1,7 @@
 mod layers;
 mod network;
 mod neuron;
-mod util;
+mod utils;
 
 use std::io::Write;
 
@@ -25,27 +25,30 @@ fn main() {
         .test_set_length(10_000)
         .finalize();
 
-    let training_imgs = Array3::from_shape_vec((50_000, 28, 28), trn_img)
+    let training_images = Array3::from_shape_vec((50_000, 28, 28), trn_img)
         .expect("Error converting images to Array3 struct")
         .map(|x| *x as f32 / 256.0);
-    let training_lbls = Array2::from_shape_vec((50_000, 1), trn_lbl)
+    let training_labels = Array2::from_shape_vec((50_000, 1), trn_lbl)
         .expect("Error converting training labels to Array2 struct")
         .map(|x| *x as u8);
 
-    let test_imgs = Array3::from_shape_vec((10_000, 28, 28), tst_img)
+    let test_images = Array3::from_shape_vec((10_000, 28, 28), tst_img)
         .expect("Error converting images to Array3 struct")
         .map(|x| *x as f32 / 256.);
-    let test_lbls = Array2::from_shape_vec((10_000, 1), tst_lbl)
+    let test_labels = Array2::from_shape_vec((10_000, 1), tst_lbl)
         .expect("Error converting testing labels to Array2 struct")
         .map(|x| *x as u8);
 
     let mut network = Network::new(
-        training_imgs,
-        training_lbls,
-        test_imgs,
-        test_lbls,
+        training_images,
+        training_labels,
+        test_images,
+        test_labels,
+		0.1,
         (784, 16, 16, 10),
     );
+
+	network.load_network("network_random.json");
 
     std::io::stdout().write(b"TRAIN/test?\n").unwrap();
     std::io::stdout().flush().unwrap();

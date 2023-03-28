@@ -1,9 +1,9 @@
 appenders:
   stdout:
     kind: console
-  training:
+  main:
     kind: rolling_file
-    path: logs/training.log
+    path: logs/main.log
     append: false
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | {f}:{L} — {m}{n}"
@@ -16,27 +16,8 @@ appenders:
         pattern: logs/archive/training_{}.log
         count: 10
         base: 1
-  testing:
-    kind: rolling_file
-    path: logs/testing.log
-    append: false
-    encoder:
-      pattern: "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | {f}:{L} — {m}{n}"
-    policy:
-      trigger: 
-        kind: size
-        limit: 500mb
-      roller:
-        kind: fixed_window
-        pattern: logs/archive/testing_{}.log
-        count: 10
-        base: 1
 
 root:
   level: trace
   appenders:
-    - training
-    - testing
-  
-loggers:
-
+    - main

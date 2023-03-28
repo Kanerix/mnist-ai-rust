@@ -9,6 +9,7 @@ image = "0.24.5"
 log = "0.4.17"
 log4rs = { version = "1.2.0", features = ["rolling_file_appender", "console_appender"] }
 mnist = "0.5.0"
-ndarray = { version = "0.15.6", features = ["serde"] }
+ndarray = { version = "0.15.6" }
 rand = "0.8.5"
-serde = "1.0.150"
+serde = "1.0"
+serde_json = "1.0"
