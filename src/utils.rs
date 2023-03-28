@@ -31,11 +31,11 @@ pub fn save_image(image_num: usize, image_data: &Array3<f32>) {
 }
 
 pub fn save_neuron_as_image(neuron: &Neuron, name: &str) {
-	let dimension = (neuron.weights.len()/4) as u32;
-	dbg!(dimension);
+	let dimension = f32::sqrt(neuron.weights.len() as f32).round() as u32;
+	// TODO: Fix this naming and code
+	let neuron_2d = neuron.weights.chunks(dimension as usize).map(|x| x.to_vec()).collect::<Vec<Vec<f32>>>();
     ImageBuffer::from_fn(dimension, dimension, |x, y| {
-		let weight = neuron.weights[(x+y) as usize];
-		dbg!(weight);
+		let weight = neuron_2d[x as usize][y as usize];
 		Luma([(weight * 256.0) as u8])
     })
     .save(&format!("images/{name}.png"))

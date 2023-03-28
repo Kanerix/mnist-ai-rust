@@ -150,10 +150,7 @@ impl Network {
 		);
 
 		for (i, neuron) in self.activation_layers.0.neurons.iter().enumerate() {
-			save_neuron_as_image(neuron, &format!("neuron_random_{}.png", i));
-			if i == 0 {
-				break;
-			}
+			save_neuron_as_image(neuron, &format!("neuron_{}.png", i));
 		}
 	}
 

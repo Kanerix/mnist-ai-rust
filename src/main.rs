@@ -48,7 +48,7 @@ fn main() {
         (784, 16, 16, 10),
     );
 
-	network.load_network("network_random.json");
+	network.load_network("network_100.json");
 
     std::io::stdout().write(b"TRAIN/test?\n").unwrap();
     std::io::stdout().flush().unwrap();
