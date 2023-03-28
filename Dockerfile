@@ -15,5 +15,6 @@ FROM alpine:latest AS runner
 WORKDIR /app
 
 COPY --from=builder /build/mnist-ai-rust .
+RUN mkdir logs networks
 
-CMD ["./mnist-ai-rust"]
+CMD ["./mnist-ai-rust", "-m", "train", "-o", "network.json", "--iterations=1000"]

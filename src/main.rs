@@ -25,17 +25,19 @@ struct Args {
 	input: Option<String>,
 	#[arg(short, long, default_value = None)]
 	output: Option<String>,
+	#[arg(short, long, default_value_t = false)]
+	generate_images: bool,
 }
 
 fn main() {
 	let args = Args::parse();
 
-    log4rs::init_file("config/log4rs.yaml", Default::default()).unwrap();
+	log4rs::init_file("config/log4rs.yaml", Default::default()).unwrap();
 
-	let mut network = Network::new(0.1, (784, 16, 16, 10));
+	let mut network = Network::new(args.learning_rate, (784, 16, 16, 10));
 
 	match args.input {
-		None => {},
+		None => {}
 		Some(file) => {
 			network.load_layers(file).unwrap();
 		}
@@ -43,15 +45,19 @@ fn main() {
 
 	match args.mode {
 		Mode::Train => {
-			network.train(args.iterations);
+			network.train(args.iterations + 1);
 		}
 		Mode::Test => {
 			network.test();
 		}
 	}
 
+	if args.generate_images {
+		network.generate_images();
+	}
+
 	match args.output {
-		None => {},
+		None => {}
 		Some(file) => {
 			network.save_layers(file).unwrap();
 		}

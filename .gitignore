@@ -1,5 +1,6 @@
 /target
-/logs
+/logs/*
+!/logs/.gitkeep
 /images/*
 !/images/.gitkeep
 .DS_Store
