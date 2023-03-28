@@ -78,11 +78,8 @@ impl Network {
         }
     }
 
-    pub fn train(&mut self) {
-        // How many times have we gone through the entire dataset.
-        let mut dataset_iteration = 0;
-
-        while dataset_iteration < 100 {
+    pub fn train(&mut self, iterations: usize) {
+        for iteration in 0..iterations {
             // An array to store the cost of each iteration.
             let mut cost_array = Vec::with_capacity(self.training_images.len());
             // Stores how many images the network has gotten correct.
@@ -94,7 +91,7 @@ impl Network {
             let outer_labels = labels.outer_iter();
 
             // Loop that runs over all training images.
-            for (_idx, (image, image_label)) in outer_images.zip(outer_labels).enumerate() {
+            for (image, image_label) in outer_images.zip(outer_labels) {
                 // Make the image pixels into a 1D array for the input layer.
                 let image_buffer = image.into_shape((1, 784)).unwrap();
                 let raw_image = image_buffer.iter().map(|x| *x).collect();
@@ -103,10 +100,12 @@ impl Network {
                 self.feed_forward(raw_image);
 
                 // Get the neuron with the highest activation.
-                let neuron = self.get_most_active_neuron().unwrap();
-                if neuron.0 == image_label[0] as usize {
-                    correct_images += 1;
-                }
+                let neuron_opt = self.get_most_active_neuron();
+				if let Some(neuron) = neuron_opt {
+					if neuron.0 == image_label[0] as usize {
+						correct_images += 1;
+					}
+				}
 
                 // Get the cost after an images has been fed forward.
                 cost_array.push(self.calculate_iteration_cost(image_label[0]));
@@ -115,18 +114,15 @@ impl Network {
                 self.back_propagate(image_label[0]);
             }
 
-            dataset_iteration += 1;
 			// Calculate the accuracy of the network.
-            let accuracy = ((correct_images as f32) / 50_000.) * 100.;
+            let accuracy = ((correct_images as f32) / labels.len() as f32) * 100.;
 			// Calculate the average cost of the entire dataset.
 			let avg_cost = cost_array.iter().sum::<f32>() / cost_array.len() as f32;
             info!(
                 "Dataset iteration {} complete – Accuracy: {}% ({}), avg. cost: {}",
-                dataset_iteration, accuracy, correct_images, avg_cost
+                iteration, accuracy, correct_images, avg_cost
             );
         }
-
-		self.save_layers("network.json").unwrap();
     }
 
     pub fn test(&mut self) {
@@ -149,9 +145,11 @@ impl Network {
 			self.feed_forward(raw_image);
 
 			// Get the neuron with the highest activation.
-			let neuron = self.get_most_active_neuron().unwrap();
-			if neuron.0 == image_label[0] as usize {
-                correct_images += 1;
+			let neuron = self.get_most_active_neuron();
+			if let Some(neuron) = neuron {
+				if neuron.0 == image_label[0] as usize {
+					correct_images += 1;
+				}
 			}
 
 			// Get the cost after an images has been fed forward.
@@ -159,7 +157,7 @@ impl Network {
 		}
 
 		// Calculate the accuracy of the network.
-		let accuracy = ((correct_images as f32) / 50_000.) * 100.;
+		let accuracy = ((correct_images as f32) / labels.len() as f32) * 100.;
 		// Calculate the average cost of the entire dataset.
 		let avg_cost = cost_array.iter().sum::<f32>() / cost_array.len() as f32;
 		info!(
@@ -322,9 +320,11 @@ impl Network {
 	pub fn save_layers(&self, name: impl Into<String>) -> anyhow::Result<()> {
 		let name_into = name.into();
 		// Save the network to the "networks" folder.
-		let mut file = File::create(&format!("networks/{}.json", name_into))?;
+		let mut file = File::create(&format!("networks/{}", name_into))?;
 		let json = serde_json::to_string(&self)?;
 		file.write_all(json.as_bytes())?;	
+
+		info!("Wrote network to file {}", name_into);
 		Ok(())
 	}
 
@@ -332,7 +332,7 @@ impl Network {
 	pub fn load_layers(&mut self, name: impl Into<String>) -> anyhow::Result<()> {
 		let name_into: String = name.into();
 		// Load the file from the "networks" folder.
-		let mut file = File::open(&format!("networks/{}.json", name_into))?;
+		let mut file = File::open(&format!("networks/{}", name_into))?;
 		let mut contents = String::new();
 		file.read_to_string(&mut contents)?;
 		let loaded: Network = serde_json::from_str(&contents)?;
@@ -341,6 +341,8 @@ impl Network {
 		self.learning_rate = loaded.learning_rate;
 		self.activation_layers = loaded.activation_layers;
 		self.output_layer = loaded.output_layer;
+
+		info!("Loaded network from file {}", name_into);
 		Ok(())
 	}
 }

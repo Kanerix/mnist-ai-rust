@@ -17,7 +17,9 @@ enum Mode {
 struct Args {
 	#[arg(short, long)]
 	mode: Mode,
-	#[arg(short, long, default_value = "0.1")]
+	#[arg(long, default_value_t = 100)]
+	iterations: usize,
+	#[arg(short, long, default_value_t = 0.1)]
 	learning_rate: f32,
 	#[arg(short, long, default_value = None)]
 	input: Option<String>,
@@ -41,10 +43,17 @@ fn main() {
 
 	match args.mode {
 		Mode::Train => {
-			network.train();
+			network.train(args.iterations);
 		}
 		Mode::Test => {
 			network.test();
+		}
+	}
+
+	match args.output {
+		None => {},
+		Some(file) => {
+			network.save_layers(file).unwrap();
 		}
 	}
 }
