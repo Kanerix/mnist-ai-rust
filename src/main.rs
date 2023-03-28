@@ -3,68 +3,48 @@ mod network;
 mod neuron;
 mod utils;
 
-use std::io::Write;
-
-use log4rs;
-use mnist::*;
-use ndarray::prelude::*;
+use clap::{Parser, ValueEnum};
 use network::Network;
 
+#[derive(ValueEnum, Clone, Debug)]
+enum Mode {
+	Train,
+	Test,
+}
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+	#[arg(short, long)]
+	mode: Mode,
+	#[arg(short, long, default_value = "0.1")]
+	learning_rate: f32,
+	#[arg(short, long, default_value = None)]
+	input: Option<String>,
+	#[arg(short, long, default_value = None)]
+	output: Option<String>,
+}
+
 fn main() {
+	let args = Args::parse();
+
     log4rs::init_file("config/log4rs.yaml", Default::default()).unwrap();
 
-    let Mnist {
-        trn_img,
-        trn_lbl,
-        tst_img,
-        tst_lbl,
-        ..
-    } = MnistBuilder::new()
-        .label_format_digit()
-        .training_set_length(50_000)
-        .test_set_length(10_000)
-        .finalize();
+	let mut network = Network::new(0.1, (784, 16, 16, 10));
 
-    let training_images = Array3::from_shape_vec((50_000, 28, 28), trn_img)
-        .expect("Error converting images to Array3 struct")
-        .map(|x| *x as f32 / 256.0);
-    let training_labels = Array2::from_shape_vec((50_000, 1), trn_lbl)
-        .expect("Error converting training labels to Array2 struct")
-        .map(|x| *x as u8);
+	match args.input {
+		None => {},
+		Some(file) => {
+			network.load_layers(file).unwrap();
+		}
+	}
 
-    let test_images = Array3::from_shape_vec((10_000, 28, 28), tst_img)
-        .expect("Error converting images to Array3 struct")
-        .map(|x| *x as f32 / 256.);
-    let test_labels = Array2::from_shape_vec((10_000, 1), tst_lbl)
-        .expect("Error converting testing labels to Array2 struct")
-        .map(|x| *x as u8);
-
-    let mut network = Network::new(
-        training_images,
-        training_labels,
-        test_images,
-        test_labels,
-		0.1,
-        (784, 16, 16, 10),
-    );
-
-	network.load_network("network_100.json");
-
-    std::io::stdout().write(b"TRAIN/test?\n").unwrap();
-    std::io::stdout().flush().unwrap();
-
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();
-
-    match input.as_str().trim() {
-        "train" | "" => {
-            network.train_network();
-        }
-        "test" => {
-            network.test_network();
-        }
-        _ => {
-            panic!("Invalid input: {:?}", input.as_bytes());
-        }
-    }
+	match args.mode {
+		Mode::Train => {
+			network.train();
+		}
+		Mode::Test => {
+			network.test();
+		}
+	}
 }

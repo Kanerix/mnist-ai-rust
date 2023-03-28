@@ -1,6 +1,7 @@
-use std::{fs::File, io::{Write, Read, ErrorKind}};
+use std::{fs::File, io::{Write, Read}};
 
-use log::{error, info};
+use log::info;
+use mnist::{Mnist, MnistBuilder};
 use ndarray::{Array2, Array3};
 use serde::{Deserialize, Serialize};
 
@@ -31,18 +32,35 @@ pub struct Network {
 
 impl Network {
     pub fn new(
-        training_images: Array3<f32>,
-        training_labels: Array2<u8>,
-        test_images: Array3<f32>,
-        test_labels: Array2<u8>,
 		learning_rate: f32,
         shape: (usize, usize, usize, usize),
     ) -> Network {
-        // Allocate all the trianing and test data on the heap.
-        let training_images = Box::new(training_images);
-        let training_labels = Box::new(training_labels);
-        let test_images = Box::new(test_images);
-        let test_labels = Box::new(test_labels);
+        // Setup the dataset and allocate it on the heap.
+		let Mnist {
+			trn_img,
+			trn_lbl,
+			tst_img,
+			tst_lbl,
+			..
+		} = MnistBuilder::new()
+			.label_format_digit()
+			.training_set_length(50_000)
+			.test_set_length(10_000)
+			.finalize();
+
+		let training_images = Box::new(Array3::from_shape_vec((50_000, 28, 28), trn_img)
+			.expect("Error converting images to Array3 struct")
+			.map(|x| *x as f32 / 256.0));
+		let training_labels = Box::new(Array2::from_shape_vec((50_000, 1), trn_lbl)
+			.expect("Error converting training labels to Array2 struct")
+			.map(|x| *x as u8));
+
+		let test_images = Box::new(Array3::from_shape_vec((10_000, 28, 28), tst_img)
+			.expect("Error converting images to Array3 struct")
+			.map(|x| *x as f32 / 256.));
+		let test_labels = Box::new(Array2::from_shape_vec((10_000, 1), tst_lbl)
+			.expect("Error converting testing labels to Array2 struct")
+			.map(|x| *x as u8));
 
         // Return a new network.
         Network {
@@ -60,7 +78,7 @@ impl Network {
         }
     }
 
-    pub fn train_network(&mut self) {
+    pub fn train(&mut self) {
         // How many times have we gone through the entire dataset.
         let mut dataset_iteration = 0;
 
@@ -79,7 +97,7 @@ impl Network {
             for (_idx, (image, image_label)) in outer_images.zip(outer_labels).enumerate() {
                 // Make the image pixels into a 1D array for the input layer.
                 let image_buffer = image.into_shape((1, 784)).unwrap();
-                let raw_image: Vec<f32> = image_buffer.iter().map(|x| *x).collect();
+                let raw_image = image_buffer.iter().map(|x| *x).collect();
 
                 // Feed the current image forward through the network.
                 self.feed_forward(raw_image);
@@ -108,10 +126,10 @@ impl Network {
             );
         }
 
-		self.save_network("network.json");
+		self.save_layers("network.json").unwrap();
     }
 
-    pub fn test_network(&mut self) {
+    pub fn test(&mut self) {
 		let images = self.test_images.clone();
 		let labels = self.test_labels.clone();
         let outer_images = images.outer_iter();
@@ -125,7 +143,7 @@ impl Network {
         for (image, image_label) in outer_images.zip(outer_labels) {
 			// Make the image pixels into a 1D array for the input layer.
 			let image_buffer = image.into_shape((1, 784)).unwrap();
-			let raw_image: Vec<f32> = image_buffer.iter().map(|x| *x).collect();
+			let raw_image = image_buffer.iter().map(|x| *x).collect();
 
 			// Feed the current image forward through the network.
 			self.feed_forward(raw_image);
@@ -300,34 +318,29 @@ impl Network {
         cost
     }
 
-	pub fn save_network(&self, name: &str) {
-		let mut file = File::create(&format!("networks/{}", name)).unwrap();
-		let json = serde_json::to_string(&self).unwrap();
-		file.write_all(json.as_bytes()).unwrap();	
+	/// Save the network layers, needed to restore the networks state, to a json file.
+	pub fn save_layers(&self, name: impl Into<String>) -> anyhow::Result<()> {
+		let name_into = name.into();
+		// Save the network to the "networks" folder.
+		let mut file = File::create(&format!("networks/{}.json", name_into))?;
+		let json = serde_json::to_string(&self)?;
+		file.write_all(json.as_bytes())?;	
+		Ok(())
 	}
 
-	pub fn load_network(&mut self, name: &str) {
-		// Load the network from the "networks" folder.
-		match File::open(&format!("networks/{}", name)) {
-			Ok(mut file) => {
-				let mut contents = String::new();
-				file.read_to_string(&mut contents).unwrap();
-				let loaded: Network = serde_json::from_str(&contents).unwrap();
+	/// Load the network layers, needed to restore the networks state, from a json file.
+	pub fn load_layers(&mut self, name: impl Into<String>) -> anyhow::Result<()> {
+		let name_into: String = name.into();
+		// Load the file from the "networks" folder.
+		let mut file = File::open(&format!("networks/{}.json", name_into))?;
+		let mut contents = String::new();
+		file.read_to_string(&mut contents)?;
+		let loaded: Network = serde_json::from_str(&contents)?;
 
-				self.learning_rate = loaded.learning_rate;
-				self.activation_layers = loaded.activation_layers;
-				self.output_layer = loaded.output_layer;
-			},
-			Err(error) => match error.kind() {
-				ErrorKind::NotFound => {
-					error!("Could not find the network file.");
-				},
-				_ => {
-					println!("Error: {:?}", error);
-					std::process::exit(1);
-				}
-			}
-		};
-
+		// Set the networks layers to the loaded layers.
+		self.learning_rate = loaded.learning_rate;
+		self.activation_layers = loaded.activation_layers;
+		self.output_layer = loaded.output_layer;
+		Ok(())
 	}
 }
