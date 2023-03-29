@@ -1,7 +1,7 @@
 appenders:
   stdout:
     kind: console
-  main:
+  file:
     kind: rolling_file
     path: logs/main.log
     append: false
@@ -20,4 +20,10 @@ appenders:
 root:
   level: trace
   appenders:
-    - main
+    - file
+
+loggers:
+  console:
+    level: debug
+    appenders:
+      - stdout

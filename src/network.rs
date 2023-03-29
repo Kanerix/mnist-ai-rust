@@ -172,6 +172,7 @@ impl Network {
 		// Calculate the average cost of the entire dataset.
 		let avg_cost = cost_array.iter().sum::<f32>() / cost_array.len() as f32;
 		info!(
+			target: "console",
 			"Test complete – Accuracy: {}% ({}), avg. cost: {}",
 			accuracy, correct_images, avg_cost
 		);
