@@ -121,7 +121,7 @@ impl Network {
 				// Don't back propagate on the first iteration.
 				if iteration != 0 {
 					// Back propagate the error.
-					self.back_propagate(image_label[0]);
+					self.backpropagate(image_label[0]);
 				}
 			}
 
@@ -224,7 +224,7 @@ impl Network {
 
 	/// Back propagate the error through the network.
 	/// Label is the correct label for the current image.
-	pub fn back_propagate(&mut self, label: u8) {
+	pub fn backpropagate(&mut self, label: u8) {
 		// Calulate the desired output for the network.
 		let mut desire = Vec::with_capacity(self.output_layer.neurons.len());
 		for i in 0..self.output_layer.neurons.len() {
