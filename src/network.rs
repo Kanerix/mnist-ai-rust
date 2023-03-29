@@ -175,10 +175,6 @@ impl Network {
 			"Test complete – Accuracy: {}% ({}), avg. cost: {}",
 			accuracy, correct_images, avg_cost
 		);
-
-		for (i, neuron) in self.activation_layers.0.neurons.iter().enumerate() {
-			save_neuron_as_image(neuron, &format!("neuron_{}.png", i));
-		}
 	}
 
 	/// Feed an raw image through the network, and update all the neuron activations.
