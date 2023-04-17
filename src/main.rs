@@ -1,3 +1,4 @@
+mod app;
 mod layers;
 mod network;
 mod neuron;
@@ -10,6 +11,7 @@ use network::Network;
 enum Mode {
 	Train,
 	Test,
+	App,
 }
 
 #[derive(Parser, Debug)]
@@ -49,6 +51,9 @@ fn main() {
 		}
 		Mode::Test => {
 			network.test();
+		}
+		Mode::App => {
+			app::run();
 		}
 	}
 
