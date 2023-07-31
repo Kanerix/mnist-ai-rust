@@ -1,17 +1,10 @@
-mod app;
-mod layers;
-mod network;
-mod neuron;
-mod utils;
-
 use clap::{Parser, ValueEnum};
-use network::Network;
+use mnist_ai_rust::network::Network;
 
 #[derive(ValueEnum, Clone, Debug)]
 enum Mode {
 	Train,
 	Test,
-	App,
 }
 
 #[derive(Parser, Debug)]
@@ -40,21 +33,12 @@ fn main() {
 
 	match args.input {
 		None => {}
-		Some(file) => {
-			network.load_layers(file).unwrap();
-		}
+		Some(file) => network.load_layers(file).unwrap(),
 	}
 
 	match args.mode {
-		Mode::Train => {
-			network.train(args.iterations + 1);
-		}
-		Mode::Test => {
-			network.test();
-		}
-		Mode::App => {
-			app::run();
-		}
+		Mode::Train => network.train(args.iterations + 1),
+		Mode::Test => network.test(),
 	}
 
 	if args.generate_images {

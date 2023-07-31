@@ -358,9 +358,9 @@ impl Network {
 		cost
 	}
 
-	/// Save the network layers, needed to restore the networks state, to a json file.
-	pub fn save_layers(&self, name: impl Into<String>) -> anyhow::Result<()> {
-		let name_into = name.into();
+	/// Save the network state to a json file.
+	pub fn save_layers(&self, filename: impl Into<String>) -> anyhow::Result<()> {
+		let name_into = filename.into();
 		// Save the network to the "networks" folder.
 		let mut file = File::create(&format!("networks/{}", name_into))?;
 		let json = serde_json::to_string(&self)?;
@@ -370,9 +370,10 @@ impl Network {
 		Ok(())
 	}
 
-	/// Load the network layers, needed to restore the networks state, from a json file.
-	pub fn load_layers(&mut self, name: impl Into<String>) -> anyhow::Result<()> {
-		let name_into: String = name.into();
+	/// Load the network state from a json file. 
+	/// Will automatically look in the `networks` folder.
+	pub fn load_layers(&mut self, filename: impl Into<String>) -> anyhow::Result<()> {
+		let name_into: String = filename.into();
 		// Load the file from the "networks" folder.
 		let mut file = File::open(&format!("networks/{}", name_into))?;
 		let mut contents = String::new();
@@ -388,6 +389,8 @@ impl Network {
 		Ok(())
 	}
 
+	/// Generate images of the neurons in the network.
+	/// Will automatically look in the `networks` folder.
 	pub fn generate_images(&self) {
 		for (i, neuron) in self.output_layer.neurons.iter().enumerate() {
 			save_neuron_as_image(neuron, &format!("output_neuron_{}.png", i));
