@@ -317,6 +317,22 @@ impl Network {
 		}
 	}
 
+	/// Calculate the cost of the current image iteration.
+	pub fn calculate_iteration_cost(&self, label: u8) -> f32 {
+		// Stores the cost of the current iteration in a float.
+		let mut cost: f32 = 0.;
+
+		for (index, neuron) in self.output_layer.neurons.iter().enumerate() {
+			if index as u8 == label {
+				cost += f32::powf(2., neuron.activation - 1.);
+			} else {
+				cost += f32::powf(2., neuron.activation - 0.);
+			}
+		}
+
+		cost
+	}
+
 	/// Get the most active neuron in the output layer for the current dataset iteration.
 	/// Returns "None" if there is no neurons in the output layer.
 	pub fn get_most_active_neuron(&self) -> Option<(usize, f32)> {
@@ -342,22 +358,6 @@ impl Network {
 		most_active_output_neuron
 	}
 
-	/// Calculate the cost of the current image iteration.
-	pub fn calculate_iteration_cost(&self, label: u8) -> f32 {
-		// Stores the cost of the current iteration in a float.
-		let mut cost: f32 = 0.;
-
-		for (index, neuron) in self.output_layer.neurons.iter().enumerate() {
-			if index as u8 == label {
-				cost += f32::powf(2., neuron.activation - 1.);
-			} else {
-				cost += f32::powf(2., neuron.activation - 0.);
-			}
-		}
-
-		cost
-	}
-
 	/// Save the network state to a json file.
 	pub fn save_layers(&self, filename: impl Into<String>) -> anyhow::Result<()> {
 		let name_into = filename.into();
@@ -370,7 +370,7 @@ impl Network {
 		Ok(())
 	}
 
-	/// Load the network state from a json file. 
+	/// Load the network state from a json file.
 	/// Will automatically look in the `networks` folder.
 	pub fn load_layers(&mut self, filename: impl Into<String>) -> anyhow::Result<()> {
 		let name_into: String = filename.into();

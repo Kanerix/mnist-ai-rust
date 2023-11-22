@@ -5,16 +5,18 @@ edition = "2021"
 default-run = "mnist-ai-rust"
 
 [dependencies]
-anyhow = "1.0.72"
-clap = { version = "4.3.19", features = ["derive"] }
-env_logger = "0.10.0"
-image = "0.24.6"
-log = "0.4.19"
-log4rs = { version = "1.2.0", features = ["rolling_file_appender", "console_appender"] }
-mnist = "0.5.0"
-ndarray = { version = "0.15.6" }
-rand = "0.8.5"
+anyhow = "1.0"
+cfg-if = "1.0"
+clap = { version = "4.3", features = ["derive"] }
+env_logger = "0.10"
+image = "0.24"
+log = "0.4"
+log4rs = { version = "1.2", features = ["rolling_file_appender", "console_appender"] }
+mnist = "0.6"
+nannou = "0.18.1"
+nannou_egui = "0.5.0"
+ndarray = { version = "0.15" }
+rand = "0.8"
 serde = "1.0"
 serde_json = "1.0"
-wgpu = "0.17.0"
-winit = "0.28.6"
+tokio = { version = "1.32.0", features = ["full"] }
