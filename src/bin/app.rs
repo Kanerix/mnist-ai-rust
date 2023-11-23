@@ -19,13 +19,10 @@ struct Model {
 	network: Network,
 	grid: Grid,
 	loaded_image: u32,
+	loaded_label: u8,
 }
 
-struct Settings {
-	loaded_image: u32,
-}
-
-const WIDTH: u32 = 800;
+const WIDTH: u32 = 1400;
 const HEIGHT: u32 = 800;
 
 const ROWS: f32 = 28.;
@@ -33,7 +30,7 @@ const COLS: f32 = 28.;
 const CELL_SIZE: f32 = 28.;
 
 struct Grid {
-	cells: Vec<Cell>,
+	cells: Vec<Vec<Cell>>,
 }
 
 struct Cell {
@@ -46,8 +43,8 @@ impl Cell {
 		draw.rect()
 			.x_y(self.position.x, self.position.y)
 			.w_h(CELL_SIZE, CELL_SIZE)
-			.color(rgba(255., 255., 255., self.activation * 255.))
-			.stroke(rgb(255., 255., 255.))
+			.color(rgba(255., 255., 255., self.activation))
+			.stroke(rgba(255., 255., 255., 0.5))
 			.stroke_weight(1.);
 	}
 
@@ -73,17 +70,22 @@ fn model(app: &App) -> Model {
 
 	let egui = Egui::from_window(&window);
 
-	let mut grid = Grid { cells: Vec::new() };
+	let mut grid = Grid {
+		cells: Vec::with_capacity(COLS as usize),
+	};
 
 	for col in 0..COLS as usize {
+		grid.cells.push(Vec::with_capacity(ROWS as usize));
+		let col_row = grid.cells.get_mut(col).unwrap();
+
 		for row in 0..ROWS as usize {
 			let grid_w = COLS * CELL_SIZE;
-			let grid_h = ROWS as f32 * CELL_SIZE;
+			let grid_h = ROWS * CELL_SIZE;
 
-			let x = (col as f32 * CELL_SIZE) - (grid_w / 2.) + (CELL_SIZE / 2.);
-			let y = (row as f32 * CELL_SIZE) - (grid_h / 2.) + (CELL_SIZE / 2.);
+			let x = (row as f32 * CELL_SIZE) - (grid_w / 2.) + (CELL_SIZE / 2.);
+			let y = ((COLS - col as f32) as f32 * CELL_SIZE) - (grid_h / 2.) + (CELL_SIZE / 2.);
 
-			grid.cells.push(Cell {
+			col_row.push(Cell {
 				position: Point2::new(x, y),
 				activation: 0.,
 			});
@@ -95,6 +97,7 @@ fn model(app: &App) -> Model {
 		network,
 		grid,
 		loaded_image: 0,
+		loaded_label: 0,
 	}
 }
 
@@ -104,9 +107,10 @@ fn update(app: &App, model: &mut Model, update: Update) {
 		ref mut network,
 		ref mut grid,
 		ref mut loaded_image,
+		ref mut loaded_label,
 	} = *model;
 
-	for cell in grid.cells.iter_mut() {
+	for cell in grid.cells.iter_mut().flatten() {
 		if app.mouse.buttons.left().is_down() {
 			let mouse = app.mouse.position();
 			let distance = cell.position.distance(mouse);
@@ -117,7 +121,13 @@ fn update(app: &App, model: &mut Model, update: Update) {
 		}
 	}
 
-	network.feed_forward(grid.cells.iter().map(|cell| cell.activation).collect());
+	network.feed_forward(
+		grid.cells
+			.iter()
+			.flatten()
+			.map(|cell| cell.activation)
+			.collect(),
+	);
 
 	egui.set_elapsed_time(update.since_start);
 	let ctx = egui.begin_frame();
@@ -134,7 +144,7 @@ fn update(app: &App, model: &mut Model, update: Update) {
 		.default_size(egui::vec2(150., 0.))
 		.show(&ctx, |ui| {
 			let most_active_neuron = network.get_most_active_neuron().unwrap();
-			ui.label(format!("Guess: {}", most_active_neuron.0 + 1));
+			ui.label(format!("Guess: {}", most_active_neuron.0));
 			ui.label(format!("Confidence: {}", most_active_neuron.1));
 		});
 
@@ -142,34 +152,34 @@ fn update(app: &App, model: &mut Model, update: Update) {
 		.default_size(egui::vec2(150., 0.))
 		.show(&ctx, |ui| {
 			if ui.button("Reset grid").clicked() {
-				for cell in grid.cells.iter_mut() {
+				for cell in grid.cells.iter_mut().flatten() {
 					cell.activation = 0.;
 				}
 			}
-			let mut changed = false;
-			changed |= ui
-				.add(egui::Slider::new(loaded_image, 0..=10_000).text("Loaded image"))
-				.changed();
 
-			if changed {
+			let slider = egui::Slider::new(loaded_image, 0..=10_000).text("Loaded image");
+			if ui.add(slider).changed() {
 				if *loaded_image == 0 {
 					return;
 				}
 
 				let images = network.test_images.clone();
+				let labels = network.test_labels.clone();
 				let outer_images = images.outer_iter();
+				let outer_labels = labels.outer_iter();
 				let image = outer_images
-					.clone()
+					.zip(outer_labels)
 					.nth(*loaded_image as usize - 1)
-					.unwrap()
-					.iter()
-					.map(|&x| x as f32)
-					.collect::<Vec<f32>>();
+					.unwrap();
 
-				for (cell, pixel) in grid.cells.iter_mut().zip(image.iter()) {
+				*loaded_label = *image.1.get(0).unwrap();
+
+				for (cell, pixel) in grid.cells.iter_mut().flatten().zip(image.0) {
 					cell.activation = *pixel;
 				}
 			}
+
+			ui.label(format!("Label: {}", &loaded_label));
 		});
 }
 
@@ -183,7 +193,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
 	let grid = &model.grid;
 
-	for cell in &grid.cells {
+	for cell in grid.cells.iter().flatten() {
 		cell.draw(&draw);
 	}
 
