@@ -33,9 +33,28 @@ struct Grid {
 	cells: Vec<Vec<Cell>>,
 }
 
+#[derive(Clone)]
 struct Cell {
 	position: Point2,
 	activation: f32,
+}
+
+impl Grid {
+	fn on_click(&mut self, mouse_pos: Point2) {
+		let clicked_cell = self
+			.cells
+			.iter_mut()
+			.flatten()
+			.min_by(|cell, other| {
+				let cell_dist = cell.position.distance(mouse_pos);
+				let other_dist = other.position.distance(mouse_pos);
+
+				cell_dist.partial_cmp(&other_dist).unwrap()
+			})
+			.unwrap();
+
+		clicked_cell.activation += 0.25;
+	}
 }
 
 impl Cell {
@@ -43,13 +62,9 @@ impl Cell {
 		draw.rect()
 			.x_y(self.position.x, self.position.y)
 			.w_h(CELL_SIZE, CELL_SIZE)
-			.color(rgba(255., 255., 255., self.activation))
-			.stroke(rgba(255., 255., 255., 0.5))
+			.color(rgb(self.activation, self.activation, self.activation))
+			.stroke(WHITE)
 			.stroke_weight(1.);
-	}
-
-	fn on_click(&mut self) {
-		self.activation = 1.
 	}
 }
 
@@ -110,15 +125,9 @@ fn update(app: &App, model: &mut Model, update: Update) {
 		ref mut loaded_label,
 	} = *model;
 
-	for cell in grid.cells.iter_mut().flatten() {
-		if app.mouse.buttons.left().is_down() {
-			let mouse = app.mouse.position();
-			let distance = cell.position.distance(mouse);
-
-			if distance < CELL_SIZE / 2. {
-				cell.on_click();
-			}
-		}
+	if app.mouse.buttons.left().is_down() {
+		let mouse = app.mouse.position();
+		grid.on_click(mouse);
 	}
 
 	network.feed_forward(
