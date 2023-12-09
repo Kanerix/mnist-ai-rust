@@ -2,17 +2,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::neuron::Neuron;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default)]
 pub struct InputLayer {
 	pub activations: Vec<f32>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct ActivationLayer {
 	pub neurons: Vec<Neuron>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct OutputLayer {
 	pub neurons: Vec<Neuron>,
 }

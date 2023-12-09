@@ -24,16 +24,16 @@ struct Args {
 	generate_images: bool,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
 	let args = Args::parse();
 
 	log4rs::init_file("config/log4rs.yaml", Default::default()).unwrap();
 
 	let mut network = Network::new(args.learning_rate, (784, 16, 16, 10));
 
-	match args.input {
-		None => {}
-		Some(file) => network.load_layers(file).unwrap(),
+	if let Some(file) = args.input {
+		network.load_layers(file).unwrap();
 	}
 
 	match args.mode {
@@ -45,10 +45,7 @@ fn main() {
 		network.generate_images();
 	}
 
-	match args.output {
-		None => {}
-		Some(file) => {
-			network.save_layers(file).unwrap();
-		}
+	if let Some(file) = args.output {
+		network.save_layers(file).unwrap();
 	}
 }

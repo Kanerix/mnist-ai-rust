@@ -23,7 +23,7 @@ struct Model {
 }
 
 const WIDTH: u32 = 1400;
-const HEIGHT: u32 = 800;
+const HEIGHT: u32 = 1000;
 
 const ROWS: f32 = 28.;
 const COLS: f32 = 28.;
@@ -41,26 +41,22 @@ struct Cell {
 
 impl Grid {
 	fn on_click(&mut self, mouse_pos: Point2) {
-		let clicked_cell = self
-			.cells
-			.iter_mut()
-			.flatten()
-			.min_by(|cell, other| {
-				let cell_dist = cell.position.distance(mouse_pos);
-				let other_dist = other.position.distance(mouse_pos);
+		let cells = self.cells.iter_mut().flatten();
 
-				cell_dist.partial_cmp(&other_dist).unwrap()
-			})
-			.unwrap();
+		for cell in cells {
+			let distance = cell.position.distance(mouse_pos);
 
-		clicked_cell.activation += 0.25;
+			if distance < CELL_SIZE {
+				cell.activation += distance * 0.01;
+			}
+		}
 	}
 }
 
 impl Cell {
 	fn draw(&self, draw: &Draw) {
 		draw.rect()
-			.x_y(self.position.x, self.position.y)
+			.x_y(self.position.x, self.position.y - CELL_SIZE)
 			.w_h(CELL_SIZE, CELL_SIZE)
 			.color(rgb(self.activation, self.activation, self.activation))
 			.stroke(WHITE)

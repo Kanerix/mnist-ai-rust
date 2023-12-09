@@ -28,6 +28,7 @@ pub struct Network {
 	pub learning_rate: f32,
 
 	// All the layers of the network.
+	#[serde(skip_serializing, skip_deserializing)]
 	pub input_layer: InputLayer,
 	pub activation_layers: (ActivationLayer, ActivationLayer),
 	pub output_layer: OutputLayer,
@@ -359,8 +360,13 @@ impl Network {
 	}
 
 	/// Save the network state to a json file.
-	pub fn save_layers(&self, filename: impl Into<String>) -> anyhow::Result<()> {
+	pub fn save_layers(&mut self, filename: impl Into<String>) -> anyhow::Result<()> {
 		let name_into = filename.into();
+
+		for neuron in self.output_layer.neurons.iter_mut() {
+			neuron.activation = 0.;
+		}
+
 		// Save the network to the "networks" folder.
 		let mut file = File::create(&format!("networks/{}", name_into))?;
 		let json = serde_json::to_string(&self)?;
@@ -381,7 +387,6 @@ impl Network {
 		let loaded: Network = serde_json::from_str(&contents)?;
 
 		// Set the networks layers to the loaded layers.
-		self.learning_rate = loaded.learning_rate;
 		self.activation_layers = loaded.activation_layers;
 		self.output_layer = loaded.output_layer;
 
