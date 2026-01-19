@@ -1,4 +1,4 @@
-use clap::{command, Parser};
+use clap::Parser;
 use mnist_ai_rust::network::Network;
 use nannou::prelude::*;
 use nannou_egui::{egui, Egui};
